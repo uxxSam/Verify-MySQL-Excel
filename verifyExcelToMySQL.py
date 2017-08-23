@@ -3,7 +3,7 @@ import pymysql
 import xlrd, datetime
 import timeit
 
-# Set system encoding to UTF-8 to avoid 
+# Set system encoding to UTF-8 to avoid
 # potential error on some characters
 import sys
 reload(sys)
@@ -21,11 +21,11 @@ sheet_names = xl_workbook.sheet_names()
 # use the first worksheet
 xl_sheet = xl_workbook.sheet_by_name(sheet_names[0])
 
-# Start verifying the database 
+# Start verifying the database
 errorCount = 0
 # set up timer
 start_time = timeit.default_timer()
-for i in range(1, xl_sheet.nrows):
+for i in range(1, len(xl_sheet.nrows)):
     Row_ID = str(int(xl_sheet.row(i)[0].value))
     sql = "select * from saleData WHERE Row_ID = " + Row_ID
     cursor.execute(sql)
@@ -34,22 +34,18 @@ for i in range(1, xl_sheet.nrows):
             # for date from Excel, convert it to desired format
             if j == 17: continue
             if j == 2 or j == 20:
+                fromMySQL = row[j]
                 a1 = xl_sheet.row(i)[j].value
-                a1_as_datetime = datetime.datetime(*xlrd.xldate_as_tuple(a1, xl_workbook.datemode))
+                a1_as_datetime = datetime.datetime(
+                        *xlrd.xldate_as_tuple(a1,xl_workbook.datemode))
                 fromExcel = a1_as_datetime.date().isoformat()
+            # if not date, no need to convert
             else:
                 fromMySQL = row[j]
                 # make sure same format and types are compared
-                if '.' in fromMySQL:
-                    fromMySQL = int(float(fromMySQL))
-                    fromExcel = int(xl_sheet.row(i)[j].value)
-                elif fromMySQL.isdigit():
-                    fromExcel = str(int(xl_sheet.row(i)[j].value))
-                else:
-                    fromExcel = str(xl_sheet.row(i)[j].value)
-                if fromExcel != fromMySQL:
-                    errorCount += 1
-                    print 'failed ' + str(errorCount) + " case"
+                fromExcel = str(xl_sheet.row(i)[j].value)
+            if fromExcel != fromMySQL:
+                errorCount += 1
     print "checked " + str(i) + " records"
 elapsed = timeit.default_timer() - start_time
 print "finished in " + str(elapsed) + "s"
